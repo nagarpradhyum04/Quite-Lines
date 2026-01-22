@@ -3,15 +3,21 @@ import google.generativeai as genai
 import requests
 from streamlit_lottie import st_lottie
 import time
-
-# --- CONFIGURATION ---
-# ⚠️ REPLACE WITH YOUR ACTUAL API KEY
-API_KEY = "AIzaSyD2DueL2aUPymOZSC0LzqUbiDGgQpzFEcg"
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+import os
 
 # --- ASSETS & SETUP ---
-st.set_page_config(page_title="EchoSignals", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="Quiet Lines", page_icon="📝", layout="wide")
+
+# --- CONFIGURATION ---
+try:
+    # Try getting the key from Streamlit secrets (for Cloud)
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except:
+    # For Local Run: PASTE YOUR KEY BELOW inside the quotes
+    API_KEY = "AIzaSyD2DueL2aUPymOZSC0LzqUbiDGgQpzFEcg" 
+
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel("models/gemini-2.5-flash")
 
 def load_lottieurl(url):
     try:
@@ -23,168 +29,208 @@ def load_lottieurl(url):
         return None
 
 # Load animations
-lottie_signal = load_lottieurl("https://assets9.lottiefiles.com/packages/lf20_4kji20Y93r.json") 
-lottie_calm = load_lottieurl("https://assets3.lottiefiles.com/packages/lf20_sk5h1kfn.json") 
+lottie_signal = load_lottieurl("https://assets9.lottiefiles.com/packages/lf20_4kji20Y93r.json")
 
-# --- CUSTOM CSS ---
-st.markdown("""
-<style>
-    .stApp {
-        background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-        color: white;
-    }
-    .css-1r6slb0, .stMarkdown {
-        color: white;
-    }
-    /* The Glass Card */
-    .glass-card {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 15px;
+# --- SESSION STATE ---
+if 'mood_hex' not in st.session_state:
+    st.session_state.mood_hex = "#2c5364"
+
+# --- CSS STYLING ---
+def get_custom_css(hex_color):
+    return f"""
+    <style>
+    /* Dynamic Background */
+    .stApp {{
+        background: linear-gradient(135deg, #0f2027, {hex_color}CC);
+        transition: background 1.5s ease;
+    }}
+    
+    /* Glass Cards */
+    .glass-card {{
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 24px;
         margin-bottom: 20px;
-    }
-    /* Emoji Display */
-    .big-emoji {
-        font-size: 60px;
-        text-align: center;
-        display: block;
-    }
-    /* Action Box */
-    .action-box {
-        background-color: rgba(108, 99, 255, 0.2);
-        border-left: 5px solid #6C63FF;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }}
+    
+    /* Text Clarity */
+    h1, h2, h3, p, .stMarkdown, li {{ color: #ffffff !important; }}
+    
+    /* Emoji & Meter */
+    .big-emoji {{ font-size: 72px; text-align: center; }}
+    .stProgress > div > div > div > div {{ background-color: #ffffff; }}
+    
+    /* Crisis Box */
+    .crisis-box {{
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 2px solid #dc3545;
+        border-radius: 10px;
         padding: 15px;
-        border-radius: 5px;
-        margin-top: 10px;
-    }
-    .stTextArea textarea {
-        background-color: rgba(0, 0, 0, 0.3);
-        color: #ffffff;
-        border: 1px solid #4CAF50;
-    }
-    .stButton>button {
-        background: linear-gradient(45deg, #6C63FF, #00B4D8);
         color: white;
-        border-radius: 25px;
-        font-weight: bold;
-    }
-</style>
-""", unsafe_allow_html=True)
+        margin-top: 20px;
+    }}
+    </style>
+    """
 
-# --- SIDEBAR ---
+# Apply the default (or previous) color immediately
+st.markdown(get_custom_css(st.session_state.mood_hex), unsafe_allow_html=True)
+
+# --- SIDEBAR: SAFETY CENTER ---
 with st.sidebar:
-    st.title("🌌 EchoSignals")
-    st.markdown("Your emotional radar.")
+    st.title("📝 Quiet Lines")
+    st.caption("A space for words unspoken.")
+    
     st.markdown("---")
-    st.info("💡 *New:* We now detect your 'Current State' and suggest a micro-habit to help.")
-    st.warning("⚠️ *Safety:* In crisis? Call 1800-599-0019 (India).")
+    
+    st.error("🚨 *Emergency Contacts*")
+    st.markdown("""
+    *India:*
+    - *Kiran (Mental Health):* 1800-599-0019
+    - *Aasra (Suicide Prev):* 9820466726
+    - *Vandrevala Fdn:* 1860-266-2345
+    
+    *Global:*
+    - *US:* 988
+    - *UK:* 111
+    """)
+    
+    st.markdown("---")
+    st.info("ℹ️ *How it works:*\n\n1. Write your unsent thoughts.\n2. AI analyzes emotional tone.\n3. The interface shifts color.\n4. You get a coping strategy.")
 
 # --- HERO SECTION ---
-col1, col2 = st.columns([1, 2])
+col1, col2 = st.columns([1, 4])
 with col1:
     if lottie_signal:
-        st_lottie(lottie_signal, height=150, key="radar")
+        st_lottie(lottie_signal, height=120, key="radar")
 with col2:
-    st.title("EchoSignals")
-    st.markdown("### Process the unsent. Clear the noise.")
-
-st.divider()
+    st.title("Quiet Lines")
+    st.markdown("##### The safe space for words you cannot send.")
 
 # --- INPUT AREA ---
-user_message = st.text_area("Write your unsent letter...", height=150, placeholder="I feel...")
-analyze_clicked = st.button("📡 Analyze Signals")
+st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+user_message = st.text_area("Write freely. No one else will see this.", height=150, placeholder="Dear...")
+col_act1, col_act2 = st.columns([1, 5])
+with col_act1:
+    analyze_clicked = st.button("📝 Transmit Lines")
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- ANALYSIS LOGIC ---
 if analyze_clicked:
     if not user_message.strip():
-        st.warning("Please input a signal.")
+        st.warning("The page is blank. Please write something.")
     else:
-        with st.spinner("Decoding emotional frequency..."):
+        with st.spinner("Listening to the quiet..."):
             try:
                 # --- PROMPT ---
+                # UPDATED NAME HERE
                 prompt = f"""
-                Act as 'EchoSignals'. Analyze this message: "{user_message}"
+                Act as 'Quiet Lines', an empathetic emotional support AI. 
+                Analyze this message: "{user_message}"
 
                 Output strictly in this format:
                 
                 ### EMOJI_STATE
-                [Insert 1 single Emoji that represents the user's state]
+                [1 Emoji]
                 
                 ### STATE_NAME
-                [1-3 words naming the state, e.g. "Overwhelmed" or "Quietly Hopeful"]
+                [1-3 words naming the state]
+                
+                ### COLOR_HEX
+                [A HEX color code. Use #FF4B4B for high anger/danger, #4B4BFF for sadness, #FFD700 for joy, #7D3C98 for anxiety]
+                
+                ### INTENSITY
+                [Integer 0-100]
                 
                 ### THE_SHIFT
-                [A 1-sentence micro-action to improve/stabilize this state. E.g. "Drink a glass of water." or "Step outside for 2 minutes."]
+                [1-sentence micro-action]
                 
                 ### EMPATHY
-                [A warm, 2-sentence validation of their feelings.]
+                [2 sentences of validation]
                 
                 ### SILENT_SIGNALS
-                [Identify 2 hidden emotional patterns.]
+                [Identify 2 hidden patterns]
+                
+                ### SAFETY_ALERT
+                [TRUE or FALSE. Set TRUE only if self-harm or suicide is mentioned]
                 """
                 
                 response = model.generate_content(prompt)
                 text = response.text
                 
-                # --- PARSING THE RESPONSE (Simple text splitting) ---
-                # This splits the AI's text into sections based on the headers we asked for
+                # --- PARSING ---
                 parts = text.split("###")
-                
-                # Default values in case parsing fails
-                emoji = "😐"
-                state_name = "Neutral"
-                shift = "Take a deep breath."
-                empathy = "I hear you."
-                signals = "No signals detected."
+                data = {
+                    "emoji": "😐", "state": "Neutral", "color": "#2c5364", 
+                    "intensity": 50, "shift": "Breathe.", "empathy": "Listening...", 
+                    "signals": "None.", "safety": "FALSE"
+                }
 
                 for part in parts:
-                    if "EMOJI_STATE" in part: emoji = part.replace("EMOJI_STATE", "").strip()
-                    if "STATE_NAME" in part: state_name = part.replace("STATE_NAME", "").strip()
-                    if "THE_SHIFT" in part: shift = part.replace("THE_SHIFT", "").strip()
-                    if "EMPATHY" in part: empathy = part.replace("EMPATHY", "").strip()
-                    if "SILENT_SIGNALS" in part: signals = part.replace("SILENT_SIGNALS", "").strip()
+                    if "EMOJI_STATE" in part: data["emoji"] = part.replace("EMOJI_STATE", "").strip()
+                    if "STATE_NAME" in part: data["state"] = part.replace("STATE_NAME", "").strip()
+                    if "COLOR_HEX" in part: data["color"] = part.replace("COLOR_HEX", "").strip()
+                    if "INTENSITY" in part: 
+                        try: data["intensity"] = int(part.replace("INTENSITY", "").strip())
+                        except: data["intensity"] = 50
+                    if "THE_SHIFT" in part: data["shift"] = part.replace("THE_SHIFT", "").strip()
+                    if "EMPATHY" in part: data["empathy"] = part.replace("EMPATHY", "").strip()
+                    if "SILENT_SIGNALS" in part: data["signals"] = part.replace("SILENT_SIGNALS", "").strip()
+                    if "SAFETY_ALERT" in part: data["safety"] = part.replace("SAFETY_ALERT", "").strip()
 
-                # --- DISPLAY UI ---
-                
-                # 1. The "Emotional Compass" (New Feature)
+                # --- 1. UPDATE COLOR IMMEDIATELY ---
+                st.markdown(get_custom_css(data["color"]), unsafe_allow_html=True)
+
+                # --- 2. DISPLAY DASHBOARD ---
                 st.markdown(f"""
                 <div class="glass-card">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h3 style="margin:0;">Current Signal: {state_name}</h3>
-                            <p style="opacity: 0.8;">Detected Resonance</p>
+                            <h2 style="margin:0; text-shadow: 0 0 10px rgba(0,0,0,0.5);">{data["state"]}</h2>
+                            <p style="opacity: 0.9;">Intensity Level: {data['intensity']}%</p>
                         </div>
-                        <div class="big-emoji">{emoji}</div>
-                    </div>
-                    <div class="action-box">
-                        <strong>⚡ Recommended Shift:</strong> {shift}
+                        <div class="big-emoji">{data["emoji"]}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 2. Detailed Breakdown
-                col_a, col_b = st.columns(2)
+                st.progress(data["intensity"] / 100)
                 
-                with col_a:
-                    st.markdown("### 💌 The Echo")
-                    st.write(empathy)
+                # --- 3. SAFETY CHECK ---
+                if "TRUE" in data["safety"].upper():
+                    st.markdown("""
+                    <div class="crisis-box">
+                        <h3>🚨 Immediate Support Needed</h3>
+                        <p>It sounds like you are going through a very difficult time. Please reach out to a human who can help.</p>
+                        <ul>
+                            <li><strong>Call:</strong> 1800-599-0019 (Kiran)</li>
+                            <li><strong>Text:</strong> HOME to 741741</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # --- 4. DETAILED CARDS ---
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown('<div class="glass-card" style="height:100%">', unsafe_allow_html=True)
+                    st.markdown(f"*⚡ The Shift:*\n\n{data['shift']}")
+                    st.markdown("---")
+                    st.markdown(f"*💌 Quiet Lines Echo:*\n\n{data['empathy']}")
+                    st.markdown('</div>', unsafe_allow_html=True)
                 
-                with col_b:
+                with c2:
+                    st.markdown('<div class="glass-card" style="height:100%">', unsafe_allow_html=True)
                     st.markdown("### 🔍 Silent Signals")
-                    st.write(signals)
-                
-                # 3. Burn Ritual
-                st.markdown("---")
-                if st.button("🔥 Burn this Thought"):
-                    with st.empty():
-                        st.write("Dissolving...")
-                        time.sleep(1.5)
-                        st.write("Gone.")
-                        time.sleep(0.5)
-                        st.empty()
+                    st.write(data["signals"])
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                # --- 5. BURN BUTTON ---
+                if st.button("🔥 Burn This"):
                     st.balloons()
-                    st.success("Cleared.")
+                    st.success("Lines released into the void.")
 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Signal Interference: {e}")
