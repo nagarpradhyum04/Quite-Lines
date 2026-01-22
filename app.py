@@ -14,7 +14,7 @@ try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
     # For Local Run: PASTE YOUR KEY BELOW inside the quotes
-    API_KEY = "AIzaSyD2DueL2aUPymOZSC0LzqUbiDGgQpzFEcg" 
+    API_KEY = "AIzaSyCAIGHdsl4MfOivam2t7IgFT2usMwcTXLo" 
 
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel("models/gemini-2.5-flash")
@@ -234,3 +234,4 @@ if analyze_clicked:
 
             except Exception as e:
                 st.error(f"Signal Interference: {e}")
+
